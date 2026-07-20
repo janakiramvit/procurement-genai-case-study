@@ -36,7 +36,7 @@ export function PipelineTrace({
     <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 text-xs">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-3 py-2 font-medium text-slate-600 hover:text-slate-900"
+        className="flex w-full items-center justify-between gap-3 px-3 py-2 font-medium text-slate-600 hover:text-slate-900"
       >
         <span>
           <span className="rounded bg-novartis-blue/10 px-1.5 py-0.5 text-novartis-darkblue">

@@ -6,10 +6,17 @@ streaming -- see DESIGN.md for the rationale). The frontend renders the
 """
 
 import json
+import sys
 import traceback
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 
-from agents.orchestrator import handle_query
+# Vercel's Python runtime doesn't automatically put this file's own directory
+# on sys.path (unlike a normal `python chat.py` invocation), so the sibling
+# `agents` package isn't importable without this.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from agents.orchestrator import handle_query  # noqa: E402
 
 
 class handler(BaseHTTPRequestHandler):

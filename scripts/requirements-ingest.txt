@@ -1,0 +1,10 @@
+# Offline ingestion/build dependencies -- NOT deployed with the app.
+# Install alongside the root requirements.txt for running ingest_docs.py /
+# build_duckdb.py locally. Kept out of any file literally named
+# requirements.txt (and out of the root one) so Vercel's Python builder
+# doesn't bundle these into the deployed api/chat.py function -- doing so
+# pushed the function bundle to 324MB, over the platform's 225MB cap.
+pypdf==4.3.1
+python-docx==1.1.2
+python-pptx==0.6.23
+openpyxl==3.1.5

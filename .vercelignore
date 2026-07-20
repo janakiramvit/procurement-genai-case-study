@@ -1,0 +1,9 @@
+# Source data and offline scripts aren't needed at runtime -- the deployed
+# api/chat.py function reads from the committed api/_store/* artifacts only.
+data/
+scripts/
+_source_repo/
+.venv/
+eval/
+deck/
+DESIGN.md
