@@ -2,7 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { ChatMessage, ChatResponse } from "./types";
+import { Footer } from "./components/Footer";
+import { Header } from "./components/Header";
 import { MessageBubble } from "./components/MessageBubble";
+import { SuggestedQuestions } from "./components/SuggestedQuestions";
 import { ThinkingIndicator } from "./components/ThinkingIndicator";
 
 const SAMPLE_QUESTIONS = [
@@ -45,29 +48,11 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex h-screen max-w-3xl flex-col px-4 py-6">
-      <header className="mb-4">
-        <h1 className="text-xl font-semibold text-novartis-darkblue">Procurement Copilot</h1>
-        <p className="text-sm text-slate-500">
-          L1 AI helpdesk over procurement policy documents and spend / PO data · multi-agent · citations + QA gated
-        </p>
-      </header>
+      <Header />
 
       <div className="flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-100 p-4">
         {messages.length === 0 && (
-          <div className="space-y-3">
-            <p className="text-sm text-slate-500">Try one of these, or ask your own question:</p>
-            <div className="flex flex-wrap gap-2">
-              {SAMPLE_QUESTIONS.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => send(q)}
-                  className="rounded-full border border-novartis-blue/30 bg-white px-3 py-1.5 text-xs text-novartis-darkblue hover:bg-novartis-blue/5"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="text-sm text-slate-500">Ask a question, or try one of the suggestions below.</p>
         )}
 
         {messages.map((m, i) => (
@@ -77,12 +62,14 @@ export default function Home() {
         <div ref={scrollRef} />
       </div>
 
+      <SuggestedQuestions questions={SAMPLE_QUESTIONS} hasMessages={messages.length > 0} onSelect={send} />
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           send(input);
         }}
-        className="mt-4 flex gap-2"
+        className="mt-3 flex gap-2"
       >
         <input
           value={input}
@@ -98,6 +85,8 @@ export default function Home() {
           Send
         </button>
       </form>
+
+      <Footer />
     </main>
   );
 }
