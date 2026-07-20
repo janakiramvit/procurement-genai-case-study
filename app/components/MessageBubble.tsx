@@ -1,4 +1,5 @@
 import type { ChatMessage } from "../types";
+import { EvidenceSection } from "./EvidenceSection";
 import { PipelineTrace } from "./PipelineTrace";
 import { SqlBlock } from "./SqlBlock";
 
@@ -15,19 +16,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
 
         {!isUser && message.response && (
           <>
-            {message.response.citations.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {message.response.citations.map((c) => (
-                  <span
-                    key={c.marker}
-                    title={`similarity ${c.score}`}
-                    className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500"
-                  >
-                    [{c.marker}] {c.source} · {c.location}
-                  </span>
-                ))}
-              </div>
-            )}
+            <EvidenceSection citations={message.response.citations} />
 
             {message.response.sql && (
               <SqlBlock
