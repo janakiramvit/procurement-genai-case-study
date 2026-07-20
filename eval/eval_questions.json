@@ -1,0 +1,107 @@
+[
+  {
+    "id": "q1",
+    "query": "I want to buy laptops in USA for USD 70k do i need a contract or a PO or do i need to engage procurement",
+    "expected_category": "BOTH",
+    "expected_source": "Procurement_Guidelines.pptx",
+    "note": "ReadMe sample question 1. Source deck has an unresolved '$[C]' threshold placeholder -- tests whether QA refuses to invent a number."
+  },
+  {
+    "id": "q2",
+    "query": "I want to add a supplier to the current sourcing event how can i do it.",
+    "expected_category": "POLICY",
+    "expected_source": "ManageSupplierLifecycles.pdf",
+    "note": "ReadMe sample question 2. Known retrieval-recall limitation -- relevant content exists in corpus but may not surface in top-6."
+  },
+  {
+    "id": "q3",
+    "query": "What is our total spend with IBM?",
+    "expected_category": "DATA",
+    "expected_source": null,
+    "note": "Simple aggregate SQL over purchase_orders."
+  },
+  {
+    "id": "q4",
+    "query": "What's the correct UNSPSC code for notebook computers?",
+    "expected_category": "DATA",
+    "expected_source": null,
+    "note": "Exact lookup against unspsc_hierarchy -- should return 43211503."
+  },
+  {
+    "id": "q5",
+    "query": "How many purchase orders did the Department of Health Care Services create in fiscal year 2013-2014?",
+    "expected_category": "DATA",
+    "expected_source": null,
+    "note": "Filtered count over purchase_orders."
+  },
+  {
+    "id": "q6",
+    "query": "What's the difference between a Segment, Family, Class, and Commodity in the UNSPSC hierarchy?",
+    "expected_category": "POLICY",
+    "expected_source": "Procurement_Contract_Requirement_Principles.docx",
+    "note": "Conceptual policy/taxonomy question."
+  },
+  {
+    "id": "q7",
+    "query": "What is a Leveraged Procurement Agreement (LPA)?",
+    "expected_category": "POLICY",
+    "expected_source": null,
+    "note": "Term appears in the PO data dictionary but may not be explained in the KnowledgeBase docs -- tests honest refusal on a genuine gap."
+  },
+  {
+    "id": "q8",
+    "query": "How do I invite a new supplier to register in Ariba?",
+    "expected_category": "POLICY",
+    "expected_source": "ManageSupplierLifecycles.pdf",
+    "note": "Ariba supplier-registration how-to."
+  },
+  {
+    "id": "q9",
+    "query": "What's the average invoice amount for disputed invoices versus non-disputed invoices?",
+    "expected_category": "DATA",
+    "expected_source": null,
+    "note": "Aggregate with GROUP BY over invoices."
+  },
+  {
+    "id": "q10",
+    "query": "What percentage of invoices were paid electronically versus on paper?",
+    "expected_category": "DATA",
+    "expected_source": null,
+    "note": "Aggregate/ratio over invoices.paperless_bill."
+  },
+  {
+    "id": "q11",
+    "query": "Do I need a formal contract if a supplier wants to use their own paper or terms instead of ours?",
+    "expected_category": "POLICY",
+    "expected_source": "Procurement_Guidelines.pptx",
+    "note": "Direct match to the PO-vs-contract policy slide."
+  },
+  {
+    "id": "q12",
+    "query": "What's the capital of France?",
+    "expected_category": "OUT_OF_SCOPE",
+    "expected_source": null,
+    "note": "Clear refusal test."
+  },
+  {
+    "id": "q13",
+    "query": "Can you write me a short poem about spring?",
+    "expected_category": "OUT_OF_SCOPE",
+    "expected_source": null,
+    "note": "Clear refusal test."
+  },
+  {
+    "id": "q14",
+    "query": "Which suppliers have Disabled Veteran Business Enterprise (DVBE) qualification and what's our total spend with them?",
+    "expected_category": "DATA",
+    "expected_source": null,
+    "note": "Filter on supplier_qualifications + aggregate."
+  },
+  {
+    "id": "q15",
+    "query": "What is SAP Ariba Contract Workspace used for?",
+    "expected_category": "POLICY",
+    "expected_source": "ConAuthEnhanced.pdf",
+    "note": "Ariba contract authoring concept question."
+  }
+]

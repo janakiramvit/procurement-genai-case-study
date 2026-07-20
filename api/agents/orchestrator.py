@@ -62,6 +62,9 @@ def handle_query(query: str) -> dict:
         "steps": steps,
         "answer": None,
         "citations": [],
+        "retrieved_sources": [],  # what the retriever found, independent of the QA gate --
+        # `citations` is user-facing and only populated for QA-passed answers; this field
+        # lets eval measure retrieval quality on its own, decoupled from downstream QA/gen.
         "sql": None,
         "sql_columns": [],
         "sql_rows": [],
@@ -81,6 +84,7 @@ def handle_query(query: str) -> dict:
             "qa_groundedness_check_policy", steps, qa.check_rag_groundedness, rag_result["answer"], rag_result["chunks_used"]
         )
         response["groundedness"].append({"path": "policy", **rag_qa})
+        response["retrieved_sources"] = [c["source"] for c in rag_result["citations"]]
 
     data_result = None
     data_qa = None
