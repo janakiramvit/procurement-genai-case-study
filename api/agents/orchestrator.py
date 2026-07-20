@@ -65,6 +65,9 @@ def handle_query(query: str) -> dict:
         "retrieved_sources": [],  # what the retriever found, independent of the QA gate --
         # `citations` is user-facing and only populated for QA-passed answers; this field
         # lets eval measure retrieval quality on its own, decoupled from downstream QA/gen.
+        "unverified_citations": [],  # full citation objects for a policy path that was
+        # attempted but failed groundedness -- lets the UI show what was retrieved even
+        # when the generated answer from it wasn't trusted, clearly labeled as unverified.
         "sql": None,
         "sql_columns": [],
         "sql_rows": [],
@@ -95,6 +98,9 @@ def handle_query(query: str) -> dict:
         response["sql"] = data_result.get("sql")
         response["sql_columns"] = data_result.get("columns", [])
         response["sql_rows"] = data_result.get("rows", [])
+
+    if rag_result is not None and not (rag_qa is not None and rag_qa["passed"]):
+        response["unverified_citations"] = rag_result["citations"]
 
     rag_ok = rag_qa is not None and rag_qa["passed"]
     data_ok = data_qa is not None and data_qa["passed"]

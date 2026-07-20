@@ -27,6 +27,7 @@ export interface ChatResponse {
   steps: PipelineStep[];
   answer: string;
   citations: Citation[];
+  unverified_citations: Citation[];
   sql: string | null;
   sql_columns: string[];
   sql_rows: Record<string, unknown>[];

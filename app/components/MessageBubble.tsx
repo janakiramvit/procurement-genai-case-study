@@ -17,6 +17,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
         {!isUser && message.response && (
           <>
             <EvidenceSection citations={message.response.citations} />
+            <EvidenceSection citations={message.response.unverified_citations} variant="unverified" />
 
             {message.response.sql && (
               <SqlBlock
