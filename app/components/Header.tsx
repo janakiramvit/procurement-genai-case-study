@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Expects an optional logo at public/novartis-logo.svg (or .png). If it's not there yet,
-// the <img> is hidden so the header still renders cleanly with text only.
+// Logo lives at public/novartis-logo.png. If it's ever missing, the <img> is hidden so
+// the header still renders cleanly with text only.
 //
 // A same-origin 404 often resolves faster than React hydration attaches the onError
 // listener (native <img> error events don't bubble, so React attaches them directly to
@@ -27,9 +27,9 @@ export function Header() {
         // eslint-disable-next-line @next/next/no-img-element
         <img
           ref={imgRef}
-          src="/novartis-logo.svg"
+          src="/novartis-logo.png"
           alt="Novartis"
-          className="h-8 w-auto shrink-0 object-contain"
+          className="h-10 w-auto shrink-0 object-contain"
           onError={() => setLogoFailed(true)}
         />
       )}

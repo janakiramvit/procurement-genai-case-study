@@ -8,11 +8,17 @@ import { MessageBubble } from "./components/MessageBubble";
 import { SuggestedQuestions } from "./components/SuggestedQuestions";
 import { ThinkingIndicator } from "./components/ThinkingIndicator";
 
+// Ordered reliable-first: the data-path questions below consistently pass their
+// groundedness check, so they lead. The two policy/BOTH questions after them are the
+// ReadMe's own sample questions -- kept for completeness, but they're the ones known to
+// sometimes fail QA (e.g. the $70k question hits a source deck with an unresolved
+// placeholder -- see DESIGN.md), so they're intentionally not the first thing shown.
 const SAMPLE_QUESTIONS = [
-  "I want to buy laptops in USA for USD 70k, do I need a contract or a PO or do I need to engage procurement?",
-  "I want to add a supplier to the current sourcing event, how can I do it?",
   "What is our total spend with IBM?",
   "What's the correct UNSPSC code for notebook computers?",
+  "What are the top 5 departments by total spend?",
+  "I want to buy laptops in USA for USD 70k, do I need a contract or a PO or do I need to engage procurement?",
+  "I want to add a supplier to the current sourcing event, how can I do it?",
 ];
 
 export default function Home() {
