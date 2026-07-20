@@ -1,0 +1,25 @@
+# Node
+node_modules/
+.next/
+next-env.d.ts
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Env
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel/
+
+# OS
+.DS_Store
+
+# Scratch clone of the source case-study repo (not a deliverable)
+_source_repo/
