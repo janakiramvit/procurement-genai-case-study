@@ -7,6 +7,11 @@ No auth, no telemetry, no user identity, no feedback capture, and no real query 
 yet. That constraint shapes almost every row below, and it's stated plainly rather than papered
 over with an estimate that looks more solid than it is.
 
+**For the full per-question evidence trail behind every number here — exact formula, raw data,
+contributing/excluded question IDs, assumptions — see `kpi_evidence_trail.md`.** That audit also
+caught and corrected one inconsistency in this document (Unsupported Question Rate), noted at
+Coverage below.
+
 ## How every row was classified
 
 - **Measured** — a direct, already-computed number from the 15-question eval. No modeling.
@@ -54,7 +59,7 @@ user" in the current system. This is one P1 investment (auth + basic analytics),
 | Use Case Self-Service Rate — Payments | Not Yet Measured | — | Zero eval questions specifically target payments |
 | Business Unit Self-Service Rate | Not Yet Measured | — | No business-unit metadata is captured anywhere in the system |
 | Vendor Self-Service Rate | Not Yet Measured | — | No vendor/requester identity is captured |
-| Unsupported Question Rate | **13.3%** (2 of 15 eval questions) | Proxy | Router correctly classified 2/2 deliberately-included out-of-scope questions as OUT_OF_SCOPE. This reflects the eval set's design (2 of 15 were intentionally off-topic), not a real query distribution. See Appendix C. |
+| Unsupported Question Rate | **20.0%** (3 of 15 eval questions) | Proxy | Router classified 3/15 questions as OUT_OF_SCOPE in practice: 2 deliberately-injected off-topic controls, plus 1 in-scope policy question the router misrouted into a refusal. This measures actual system behavior, not eval-set design intent (which alone would give 13.3%, counting only the 2 deliberate controls) — see Appendix C for why actual behavior is the more defensible number. |
 | Top Escalation Categories | Qualitative (4 categories identified) | Proxy | Every eval question that triggered an escalation recommendation or a routing failure, categorized. See Appendix D. |
 
 ### Trust
@@ -132,9 +137,16 @@ case, minimum) exists.
 
 ## Appendix C — Unsupported Question Rate caveat
 
-2 of the 15 eval questions were deliberately written to be out-of-scope, specifically to test
-refusal behavior. 13.3% is therefore a property of the eval set's design, not an observation
-about how often real users will ask off-topic questions. Real-world unsupported-question rate is
+**Corrected during audit (see `kpi_evidence_trail.md`):** this was originally reported as 13.3%
+(2 of 15), counting only the deliberately-injected off-topic control questions. That undercounts
+the metric it claims to measure — a third question (q7, "What is a Leveraged Procurement
+Agreement?") is a genuine in-scope policy question that the router misclassified as
+OUT_OF_SCOPE, and from the user's perspective it received the identical refusal. Counting actual
+router output rather than eval-set intent gives **20.0% (3 of 15)**, now the primary figure.
+
+Either reading shares the same deeper limitation: 2 of the 15 questions were deliberately written
+to be off-topic, specifically to test refusal behavior, so this ratio reflects the eval author's
+choices, not a real question-arrival distribution. Real-world unsupported-question rate is
 unknown until there's real query traffic to measure it against.
 
 ## Appendix D — Top Escalation Categories (qualitative, n too small to rank)
