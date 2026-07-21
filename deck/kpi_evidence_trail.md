@@ -25,6 +25,99 @@ reproducing the whole file.
 
 ---
 
+## Full Question Index (q1–q15)
+
+"Expected route" is the hand-assigned label in `eval_questions.json` (what the question *should*
+route to). "Intentionally in scope" distinguishes the 13 real procurement questions from the 2
+deliberately-injected off-topic controls. "Final outcome" is what actually happened, in one line.
+
+| ID | Question | Expected route | Intentionally in scope? | Final outcome |
+|---|---|---|---|---|
+| q1 | I want to buy laptops in USA for USD 70k do i need a contract or a PO or do i need to engage procurement | Hybrid | Yes | Routed Hybrid (correct). Data leg grounded (passed). Policy leg failed groundedness — source deck's own "$[C]" placeholder — escalation caveat shown. Relevance 3/5. |
+| q2 | I want to add a supplier to the current sourcing event how can i do it. | Policy | Yes | Routed Policy (correct). Failed groundedness — relevant content exists in corpus but wasn't retrieved in top-6 (recall gap, not missing content). Fallback/escalation message shown. Relevance 3/5. |
+| q3 | What is our total spend with IBM? | Data | Yes | Routed Data (correct). Grounded (SQL executed, 1 row). Clean answer, no escalation. Relevance 5/5. |
+| q4 | What's the correct UNSPSC code for notebook computers? | Data | Yes | Routed Data (correct). Grounded. Clean answer. Relevance 5/5. |
+| q5 | How many purchase orders did the Department of Health Care Services create in fiscal year 2013-2014? | Data | Yes | Routed Data (correct). Grounded (SQL executed, returned a valid count of 0). Clean answer. Relevance 5/5. |
+| q6 | What's the difference between a Segment, Family, Class, and Commodity in the UNSPSC hierarchy? | Policy | Yes | Routed Policy (correct). Grounded (judge score 5/5). Clean answer. Relevance 5/5. |
+| q7 | What is a Leveraged Procurement Agreement (LPA)? | Policy | Yes | **Misrouted to Out of Scope** (router failure — term isn't in the corpus). No groundedness check ran. User got a generic refusal instead of an honest "not covered" answer. Relevance 1/5. |
+| q8 | How do I invite a new supplier to register in Ariba? | Policy | Yes | Routed Policy (correct). Grounded (score 5/5). Clean answer. Relevance 5/5. |
+| q9 | What's the average invoice amount for disputed invoices versus non-disputed invoices? | Data | Yes | Routed Data (correct). Grounded. Clean answer. Relevance 5/5. |
+| q10 | What percentage of invoices were paid electronically versus on paper? | Data | Yes | Routed Data (correct). Grounded. Clean answer. Relevance 5/5. |
+| q11 | Do I need a formal contract if a supplier wants to use their own paper or terms instead of ours? | Policy | Yes | Routed Policy (correct). Grounded (score 5/5). Clean answer. Relevance 5/5. |
+| q12 | What's the capital of France? | Out of Scope | **No** (deliberate control) | Correctly refused as Out of Scope. Relevance 1/5 is expected/correct here — a low score on an intentional refusal is not a failure. |
+| q13 | Can you write me a short poem about spring? | Out of Scope | **No** (deliberate control) | Correctly refused as Out of Scope. Relevance 1/5 expected/correct. |
+| q14 | Which suppliers have Disabled Veteran Business Enterprise (DVBE) qualification and what's our total spend with them? | Data | Yes | Routed Hybrid, not Data (router mismatch, defensible — DVBE is a qualification concept, not pure data). Data leg grounded (0 suppliers found, a valid empty result). Policy leg failed groundedness — passages never mention DVBE. Escalation caveat shown. Relevance 3/5. |
+| q15 | What is SAP Ariba Contract Workspace used for? | Policy | Yes | Routed Policy (correct). Grounded (score 5/5) — notably, this passed on a *different* source than the one hand-labeled as "expected" in the eval set, which is a valid outcome, not an error (see Grounded Response Rate assumptions). Clean answer. Relevance 5/5. |
+
+**Intentionally in scope:** 13 questions (all except q12, q13).
+**Intentionally out of scope:** 2 questions (q12, q13).
+
+---
+
+## Rate Reconciliation — exact question sets behind each headline number
+
+### 69.2% — Procurement Self-Service Rate
+
+- **Denominator (13):** q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q14, q15 — all intentionally in-scope questions.
+- **Numerator (9) — clean self-service, no caveat, correctly routed and grounded:** q3, q4, q5, q6, q8, q9, q10, q11, q15
+- **Excluded from numerator (4) — did not self-serve cleanly:** q1 (policy leg failed), q2 (failed entirely), q7 (misrouted, no answer given), q14 (policy leg failed)
+- **Check:** 9 + 4 = 13 ✓. 9 ÷ 13 = 69.2% ✓
+
+### 13.3% — Unsupported Question Rate (design-intent reading)
+
+This is the narrower of the two readings documented in this audit — it counts only the questions
+*deliberately written* to be out of scope, not the router's actual refusal behavior (which
+includes q7 and gives 20.0% — see the correction note at the top of this document and
+`kpi_scorecard.md` Appendix C). Answering exactly what was asked:
+
+- **Denominator (15):** all questions, q1–q15.
+- **Numerator (2):** q12, q13 — the two questions written specifically as off-topic controls.
+- **Excluded from numerator (13):** every other question, including q7 — q7 is *not* counted here because it was intentionally written as an in-scope policy question; its exclusion from this specific 13.3% figure is exactly why 20.0% (which does count q7) is the primary number used elsewhere in this audit.
+- **Check:** 2 ÷ 15 = 13.3% ✓ — but see above: this number describes eval-set design, not actual router behavior. Use 20.0% (q7, q12, q13 = 3/15) for the latter.
+
+### 23.1% — SME Escalation Rate
+
+- **Denominator (13):** same 13 intentionally-in-scope questions as the Self-Service Rate.
+- **Numerator (3) — answer explicitly recommended escalation:** q1, q2, q14
+- **Excluded from numerator (10):** q3, q4, q5, q6, q8, q9, q10, q11, q15 (9 questions — self-served cleanly, no escalation needed) + q7 (1 question — excluded deliberately: its answer was a wrong refusal, not an escalation recommendation; conflating the two would hide a routing bug inside a QA-gate metric)
+- **Check:** 3 + 10 = 13 ✓. 3 ÷ 13 = 23.1% ✓
+
+### 78.6% — Grounded Response Rate
+
+This one is measured in *checks*, not *questions* — q1 and q14 each ran two checks (routed to
+Hybrid), so the denominator is 14, not 13 or 15.
+
+- **Policy checks (7):** q1 (failed), q2 (failed), q6 (passed), q8 (passed), q11 (passed), q14 (failed), q15 (passed) → 4 of 7 passed
+- **Data checks (7):** q1 (passed), q3 (passed), q4 (passed), q5 (passed), q9 (passed), q10 (passed), q14 (passed) → 7 of 7 passed
+- **Questions contributing zero checks (3):** q7, q12, q13 — no agent ever ran for these (q7 misrouted to Out of Scope before reaching a policy check; q12/q13 correctly refused at the router, same reason).
+- **Check:** 7 + 7 = 14 total checks. (4 + 7) = 11 passed. 11 ÷ 14 = 78.6% ✓
+
+### Cross-check: does every question land somewhere in each metric?
+
+| ID | Self-Service (9/13) | Unsupported 13.3% (2/15) | Escalation (3/13) | Grounded checks (11/14) |
+|---|---|---|---|---|
+| q1 | in denom, not numerator | not counted | in numerator | 2 checks (1 pass, 1 fail) |
+| q2 | in denom, not numerator | not counted | in numerator | 1 check (fail) |
+| q3 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q4 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q5 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q6 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q7 | in denom, not numerator | not counted (design-intent reading) | in denom, not numerator | 0 checks |
+| q8 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q9 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q10 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q11 | in numerator | not counted | not in numerator | 1 check (pass) |
+| q12 | excluded (control) | in numerator | excluded (control) | 0 checks |
+| q13 | excluded (control) | in numerator | excluded (control) | 0 checks |
+| q14 | in denom, not numerator | not counted | in numerator | 2 checks (1 pass, 1 fail) |
+| q15 | in numerator | not counted | not in numerator | 1 check (pass) |
+
+Every row (q1–q15) is accounted for in all four columns — nothing is silently dropped, and every
+"not counted" or "excluded" cell has a stated reason above.
+
+---
+---
+
 ## NORTH STAR
 
 ### 1. Procurement Self-Service Rate
