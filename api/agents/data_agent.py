@@ -12,8 +12,16 @@ would add an AST-level allowlist (e.g. via sqlglot) as defense in depth.
 import json
 import re
 
-from .store import CHAT_MODEL, get_client, get_db_connection, get_schema_description
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
+from .contracts import DataResult, SQLGeneration
+from .store import get_chat_model, get_db_connection, get_schema_description
+
+# {schema} is a real template variable; {{"sql": "<the query>"}} is already
+# double-brace-escaped for LangChain's f-string-style renderer (same
+# convention this text used for Python's str.format() before Step 2) --
+# passed through unchanged, no wrapper text was altered.
 SQL_SYSTEM_PROMPT = """You write DuckDB SQL for a procurement data analyst tool. \
 Given the schema below, write ONE read-only SQL query (SELECT or WITH...SELECT only) that \
 answers the user's question.
@@ -42,6 +50,20 @@ FORBIDDEN_KEYWORDS = (
 MAX_ROWS_RETURNED = 200
 MAX_ROWS_FOR_SUMMARY = 30
 
+_sql_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", SQL_SYSTEM_PROMPT),
+        ("human", "{query}"),
+    ]
+)
+
+_summary_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", SUMMARY_SYSTEM_PROMPT),
+        ("human", "Question: {query}\n\nSQL: {sql}\n\nResults: {results}"),
+    ]
+)
+
 
 def validate_and_prepare_sql(sql: str) -> str:
     s = sql.strip().rstrip(";").strip()
@@ -62,31 +84,18 @@ def validate_and_prepare_sql(sql: str) -> str:
 
 
 def generate_sql(query: str) -> str:
-    resp = get_client().chat.completions.create(
-        model=CHAT_MODEL,
-        temperature=0,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SQL_SYSTEM_PROMPT.format(schema=get_schema_description())},
-            {"role": "user", "content": query},
-        ],
+    chain = _sql_prompt | get_chat_model().with_structured_output(
+        SQLGeneration, method="json_schema", strict=True
     )
-    result = json.loads(resp.choices[0].message.content)
-    return result["sql"]
+    result = chain.invoke({"schema": get_schema_description(), "query": query})
+    return result.sql
 
 
 def summarize_results(query: str, sql: str, columns: list, rows: list) -> str:
     sample = rows[:MAX_ROWS_FOR_SUMMARY]
     payload = json.dumps({"columns": columns, "rows": sample, "truncated": len(rows) > len(sample)}, default=str)
-    resp = get_client().chat.completions.create(
-        model=CHAT_MODEL,
-        temperature=0,
-        messages=[
-            {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
-            {"role": "user", "content": f"Question: {query}\n\nSQL: {sql}\n\nResults: {payload}"},
-        ],
-    )
-    return resp.choices[0].message.content
+    chain = _summary_prompt | get_chat_model() | StrOutputParser()
+    return chain.invoke({"query": query, "sql": sql, "results": payload})
 
 
 def answer_from_data(query: str) -> dict:
@@ -94,7 +103,8 @@ def answer_from_data(query: str) -> dict:
     try:
         safe_sql = validate_and_prepare_sql(raw_sql)
     except ValueError as e:
-        return {"sql": raw_sql, "error": f"blocked unsafe SQL: {e}", "answer": None, "columns": [], "rows": []}
+        result = DataResult(sql=raw_sql, error=f"blocked unsafe SQL: {e}", answer=None, columns=[], rows=[])
+        return result.model_dump()
 
     try:
         con = get_db_connection()
@@ -102,8 +112,12 @@ def answer_from_data(query: str) -> dict:
         columns = [d[0] for d in cursor.description]
         rows = cursor.fetchall()
     except Exception as e:
-        return {"sql": safe_sql, "error": f"SQL execution failed: {e}", "answer": None, "columns": [], "rows": []}
+        result = DataResult(sql=safe_sql, error=f"SQL execution failed: {e}", answer=None, columns=[], rows=[])
+        return result.model_dump()
 
     row_dicts = [dict(zip(columns, r)) for r in rows]
     answer = summarize_results(query, safe_sql, columns, row_dicts)
-    return {"sql": safe_sql, "error": None, "answer": answer, "columns": columns, "rows": row_dicts[:MAX_ROWS_FOR_SUMMARY]}
+    result = DataResult(
+        sql=safe_sql, error=None, answer=answer, columns=columns, rows=row_dicts[:MAX_ROWS_FOR_SUMMARY]
+    )
+    return result.model_dump()

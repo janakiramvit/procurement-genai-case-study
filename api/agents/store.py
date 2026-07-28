@@ -11,6 +11,7 @@ from pathlib import Path
 
 import duckdb
 import numpy as np
+from langchain_openai import ChatOpenAI
 from openai import OpenAI
 
 STORE_DIR = Path(__file__).resolve().parent.parent / "_store"
@@ -22,6 +23,14 @@ CHAT_MODEL = "gpt-4o-mini"
 @lru_cache(maxsize=1)
 def get_client() -> OpenAI:
     return OpenAI()
+
+
+@lru_cache(maxsize=1)
+def get_chat_model() -> ChatOpenAI:
+    """Shared LangChain chat model -- Step 2. Embeddings and the DuckDB
+    connection below are untouched raw-SDK calls; this is the only new
+    LangChain entry point added to store.py."""
+    return ChatOpenAI(model=CHAT_MODEL, temperature=0)
 
 
 @lru_cache(maxsize=1)

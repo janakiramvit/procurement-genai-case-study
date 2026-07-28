@@ -10,14 +10,18 @@
 Either agent failing its gate returns a safe fallback instead of a hallucinated answer.
 """
 
-import json
+from langchain_core.prompts import ChatPromptTemplate
 
-from .store import CHAT_MODEL, get_client
+from .contracts import GroundednessJudgment, QAResult
+from .store import get_chat_model
 
+# No real template variables in the system message itself (context/answer go into the
+# human message) -- escaped for LangChain's f-string-style renderer so the rendered
+# system message is byte-identical to the original literal text.
 JUDGE_SYSTEM_PROMPT = """You are a strict fact-checker. Given numbered source passages and an \
 answer that cites them, verify every factual claim in the answer is actually supported by the \
-cited passage(s). Respond with strict JSON: {"grounded": true|false, "score": 1-5, "reasoning": \
-"<one short sentence>"}. Score 5 = fully supported, no unsupported claims. Score 1 = mostly \
+cited passage(s). Respond with strict JSON: {{"grounded": true|false, "score": 1-5, "reasoning": \
+"<one short sentence>"}}. Score 5 = fully supported, no unsupported claims. Score 1 = mostly \
 unsupported or citations don't back the claims. grounded=true only if score >= 4."""
 
 FALLBACK_MESSAGE = (
@@ -25,32 +29,36 @@ FALLBACK_MESSAGE = (
     "base or data. Please escalate this question to the L2 procurement team."
 )
 
+_judge_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", JUDGE_SYSTEM_PROMPT),
+        ("human", "Source passages:\n\n{context}\n\nAnswer to check:\n{answer}"),
+    ]
+)
+
 
 def check_rag_groundedness(answer: str, chunks_used: list) -> dict:
     context = "\n\n".join(f"[{i + 1}] {c['text']}" for i, c in enumerate(chunks_used))
-    resp = get_client().chat.completions.create(
-        model=CHAT_MODEL,
-        temperature=0,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": JUDGE_SYSTEM_PROMPT},
-            {"role": "user", "content": f"Source passages:\n\n{context}\n\nAnswer to check:\n{answer}"},
-        ],
+    chain = _judge_prompt | get_chat_model().with_structured_output(
+        GroundednessJudgment, method="json_schema", strict=True
     )
-    result = json.loads(resp.choices[0].message.content)
-    return {
-        "passed": bool(result.get("grounded", False)),
-        "score": result.get("score"),
-        "reasoning": result.get("reasoning", ""),
-        "method": "llm_judge",
-    }
+    judgment = chain.invoke({"context": context, "answer": answer})
+    result = QAResult(
+        passed=judgment.grounded,
+        score=judgment.score,
+        reasoning=judgment.reasoning,
+        method="llm_judge",
+    )
+    return result.model_dump(exclude_none=True)
 
 
 def check_sql_groundedness(data_result: dict) -> dict:
     if data_result.get("error"):
-        return {"passed": False, "reasoning": data_result["error"], "method": "deterministic"}
-    return {
-        "passed": True,
-        "reasoning": f"SQL executed successfully, {len(data_result.get('rows', []))} row(s) returned.",
-        "method": "deterministic",
-    }
+        result = QAResult(passed=False, reasoning=data_result["error"], method="deterministic")
+        return result.model_dump(exclude_none=True)
+    result = QAResult(
+        passed=True,
+        reasoning=f"SQL executed successfully, {len(data_result.get('rows', []))} row(s) returned.",
+        method="deterministic",
+    )
+    return result.model_dump(exclude_none=True)
