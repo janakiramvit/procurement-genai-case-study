@@ -31,8 +31,30 @@ from pydantic import BaseModel
 
 
 class RouterDecision(BaseModel):
+    """Kept only because router.py (deprecated -- superseded by planner.py in
+    Step 3A, retained temporarily as comparison code) still references it."""
+
     category: Literal["POLICY", "DATA", "BOTH", "OUT_OF_SCOPE"]
     reasoning: str
+
+
+class PlannerDecision(BaseModel):
+    """Structured output for planner.py -- Step 3A. The planner selects which
+    capabilities a request needs; it does NOT decide execution order (that's
+    fixed in code, see planner.canonicalize_tools). tools_to_call is treated
+    as an unordered set of requested capabilities regardless of the order the
+    model lists them in."""
+
+    tools_to_call: list[Literal["policy_answer", "procurement_data_answer"]]
+    reasoning: str
+
+
+class PolicyAnswerInput(BaseModel):
+    query: str
+
+
+class ProcurementDataInput(BaseModel):
+    query: str
 
 
 class RAGResult(BaseModel):

@@ -1,12 +1,11 @@
-"""Orchestrator entrypoint -- Step 1: LangGraph-based pipeline.
+"""Orchestrator entrypoint -- Step 1, extended in Step 3A.
 
 `handle_query()` keeps its exact original signature and response contract.
-Internally it now builds an initial state, invokes the compiled LangGraph
-parent graph (api/agents/graph.py) -- router -> {rag_agent, data_agent} (as
-needed) -> qa gate -> synthesizer, same deterministic control flow as
-before, just expressed as a graph instead of hand-written if/elif branching
--- and maps the final state back into the same response dict shape callers
-(api/chat.py, scripts/evaluate.py) already depend on.
+Internally it builds an initial state, invokes the compiled LangGraph parent
+graph (api/agents/graph.py) -- planner -> {policy_answer, procurement_data}
+(as needed) -> qa gate -> synthesizer -- and maps the final state back into
+the same response dict shape callers (api/chat.py, scripts/evaluate.py)
+already depend on.
 """
 
 import time
@@ -20,6 +19,9 @@ def handle_query(query: str) -> dict:
     initial_state = {
         "query": query,
         "category": None,
+        "tools_to_call": [],
+        "planner_failed": False,
+        "planner_error": None,
         "rag_result": None,
         "rag_qa": None,
         "data_result": None,

@@ -1,16 +1,25 @@
-"""LangGraph parent graph -- Step 1.
+"""LangGraph parent graph -- Step 1, extended in Step 3A.
 
-Reproduces the existing router -> rag/data -> qa -> synthesize control flow
-(previously hand-written in orchestrator.py) on a LangGraph StateGraph, node
-for node, edge for edge, same order. No parallelism, no sub-agents, no
-tools, no LangChain wrappers: every node below is a thin wrapper calling the
-existing router / rag_agent / data_agent / qa functions unchanged.
+Step 3A is bounded planner-based tool dispatch, not an autonomous agent
+loop: planner_node makes one bounded LLM call selecting which of two fixed
+capabilities (policy_answer, procurement_data_answer) a request needs;
+execution order is fixed in code (planner.canonicalize_tools -- policy
+always before data), not decided by the planner or the graph at runtime.
+Same sequential control flow as Step 1, same response contract -- only the
+decision node and the two capability nodes' names changed.
 
-Node execution order per category (identical to the current pipeline):
-  OUT_OF_SCOPE: router_node -> out_of_scope_node
-  POLICY:       router_node -> rag_node -> respond_node
-  DATA:         router_node -> data_node -> respond_node
-  BOTH:         router_node -> rag_node -> data_node -> respond_node
+Node execution order per category (identical to Step 1's pipeline, now
+driven by canonical tool-list membership instead of a category string):
+  OUT_OF_SCOPE:        planner_node -> out_of_scope_node
+  POLICY:               planner_node -> policy_answer_node -> respond_node
+  DATA:                 planner_node -> procurement_data_node -> respond_node
+  BOTH:                 planner_node -> policy_answer_node -> procurement_data_node -> respond_node
+
+A planner LLM/infrastructure failure also routes to out_of_scope_node
+(tools_to_call == [], same as a genuine out-of-scope decision) but carries
+a distinct `planner_failed` flag through state and the steps[] trace, and
+out_of_scope_node returns a different, honest message in that case -- see
+PLANNER_FAILURE_MESSAGE below.
 """
 
 import time
@@ -19,7 +28,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END, StateGraph
 
-from . import data_agent, qa, rag_agent, router
+from . import planner, qa, tools
 from .state import GraphState
 from .store import get_chat_model
 
@@ -27,6 +36,11 @@ OUT_OF_SCOPE_MESSAGE = (
     "That looks outside procurement policy, procurement systems, or spend/PO data. "
     "I can help with things like contract/PO thresholds, Ariba how-tos, UNSPSC "
     "classification, or spend and invoice analysis -- try rephrasing around one of those."
+)
+
+PLANNER_FAILURE_MESSAGE = (
+    "I wasn't able to process this question due to an internal error. Please try again, "
+    "or escalate to the L2 procurement team if this persists."
 )
 
 SYNTHESIZE_SYSTEM_PROMPT = """Combine the policy answer and the data answer below into one \
@@ -58,14 +72,22 @@ def synthesize(query: str, rag_answer: str, data_answer: str) -> str:
     return str(result)
 
 
-def router_node(state: GraphState) -> dict:
-    route_result, step = _timed("router", router.route, state["query"])
-    step["detail"] = route_result
-    return {"category": route_result["category"], "steps": [step]}
+def planner_node(state: GraphState) -> dict:
+    plan_result, step = _timed("planner", planner.plan, state["query"])
+    step["detail"] = {"tools_to_call": plan_result["tools_to_call"], "reasoning": plan_result["reasoning"]}
+    if plan_result["planner_failed"]:
+        step["error"] = plan_result["planner_error"]
+    return {
+        "category": plan_result["category"],
+        "tools_to_call": plan_result["tools_to_call"],
+        "planner_failed": plan_result["planner_failed"],
+        "planner_error": plan_result["planner_error"],
+        "steps": [step],
+    }
 
 
-def rag_node(state: GraphState) -> dict:
-    rag_result, step1 = _timed("rag_retrieve_and_answer", rag_agent.answer_from_docs, state["query"])
+def policy_answer_node(state: GraphState) -> dict:
+    rag_result, step1 = _timed("policy_answer", tools.policy_answer, state["query"])
     rag_qa, step2 = _timed(
         "qa_groundedness_check_policy",
         qa.check_rag_groundedness,
@@ -81,9 +103,9 @@ def rag_node(state: GraphState) -> dict:
     }
 
 
-def data_node(state: GraphState) -> dict:
+def procurement_data_node(state: GraphState) -> dict:
     data_result, step1 = _timed(
-        "sql_generate_execute_and_answer", data_agent.answer_from_data, state["query"]
+        "procurement_data_answer", tools.procurement_data_answer, state["query"]
     )
     data_qa, step2 = _timed("qa_groundedness_check_data", qa.check_sql_groundedness, data_result)
     return {
@@ -98,6 +120,8 @@ def data_node(state: GraphState) -> dict:
 
 
 def out_of_scope_node(state: GraphState) -> dict:
+    if state.get("planner_failed"):
+        return {"answer": PLANNER_FAILURE_MESSAGE}
     return {"answer": OUT_OF_SCOPE_MESSAGE}
 
 
@@ -148,34 +172,47 @@ def respond_node(state: GraphState) -> dict:
     return update
 
 
-def _route_after_router(state: GraphState) -> str:
-    return state["category"]
+def _route_after_planner(state: GraphState) -> str:
+    # tools_to_call is already canonicalized (deduped, fixed order) by planner.plan() --
+    # this function only tests membership, it never relies on list order.
+    tools_to_call = state["tools_to_call"]
+    if "policy_answer" in tools_to_call:
+        return "policy_answer_node"
+    if "procurement_data_answer" in tools_to_call:
+        return "procurement_data_node"
+    return "out_of_scope_node"
 
 
-def _route_after_rag(state: GraphState) -> str:
-    return state["category"]
+def _route_after_policy_answer(state: GraphState) -> str:
+    if "procurement_data_answer" in state["tools_to_call"]:
+        return "procurement_data_node"
+    return "respond_node"
 
 
 def build_graph():
     builder = StateGraph(GraphState)
-    builder.add_node("router_node", router_node)
-    builder.add_node("rag_node", rag_node)
-    builder.add_node("data_node", data_node)
+    builder.add_node("planner_node", planner_node)
+    builder.add_node("policy_answer_node", policy_answer_node)
+    builder.add_node("procurement_data_node", procurement_data_node)
     builder.add_node("respond_node", respond_node)
     builder.add_node("out_of_scope_node", out_of_scope_node)
 
-    builder.set_entry_point("router_node")
+    builder.set_entry_point("planner_node")
     builder.add_conditional_edges(
-        "router_node",
-        _route_after_router,
-        {"POLICY": "rag_node", "BOTH": "rag_node", "DATA": "data_node", "OUT_OF_SCOPE": "out_of_scope_node"},
+        "planner_node",
+        _route_after_planner,
+        {
+            "policy_answer_node": "policy_answer_node",
+            "procurement_data_node": "procurement_data_node",
+            "out_of_scope_node": "out_of_scope_node",
+        },
     )
     builder.add_conditional_edges(
-        "rag_node",
-        _route_after_rag,
-        {"BOTH": "data_node", "POLICY": "respond_node"},
+        "policy_answer_node",
+        _route_after_policy_answer,
+        {"procurement_data_node": "procurement_data_node", "respond_node": "respond_node"},
     )
-    builder.add_edge("data_node", "respond_node")
+    builder.add_edge("procurement_data_node", "respond_node")
     builder.add_edge("respond_node", END)
     builder.add_edge("out_of_scope_node", END)
 

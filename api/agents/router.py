@@ -1,4 +1,11 @@
-"""Router agent: one LLM call that classifies the query before any retrieval happens."""
+"""DEPRECATED -- Step 3A superseded this with planner.py's bounded
+tool-selection planner. Retained temporarily, unused by graph.py, only as
+comparison code while the planner path is verified; not wired into the
+graph anymore. Remove once the planner path has been running clean and
+this is no longer needed as a reference (see api/agents/planner.py).
+
+Router agent: one LLM call that classifies the query before any retrieval happens.
+"""
 
 from langchain_core.prompts import ChatPromptTemplate
 
