@@ -42,5 +42,13 @@
     "query": "Has that changed -- what's our current total spend with IBM?",
     "expected_tools": ["procurement_data_answer"],
     "note": "Must trigger a FRESH procurement_data_answer tool call this turn, not just restate the number from the prior assistant message -- this is the direct test of 'memory is context, not evidence.'"
+  },
+  {
+    "id": "a6",
+    "description": "compliance/approval question must retrieve policy evidence, not be answered by the planner or FINISH with zero tools",
+    "conversation_history": [],
+    "query": "Can we continue buying laptops from supplier ABC without competitive tender approval?",
+    "expected_tools": ["policy_answer"],
+    "note": "Regression case for a reported bug: this question was observed routing directly to FINISH with 0 tool calls, meaning the planner answered a compliance/approval question from its own reasoning instead of retrieving policy evidence. policy_answer must be called; the acceptable final outcomes are either a grounded, cited answer or a QA fallback with L2 escalation -- the planner must never itself assert whether the purchase can proceed."
   }
 ]

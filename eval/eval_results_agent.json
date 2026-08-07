@@ -21,10 +21,10 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 0,
-      "total_latency_ms": 5708,
+      "total_latency_ms": 4218,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "The total spend with IBM is 57,602,345.2.",
+      "answer": "Your total spend with IBM is $57,944,836.32.",
       "pass": true
     },
     {
@@ -49,12 +49,12 @@
         "procurement_data_answer": 1,
         "policy_answer": 1
       },
-      "chat_completion_count": 8,
+      "chat_completion_count": 7,
       "embedding_call_count": 1,
-      "total_latency_ms": 9712,
+      "total_latency_ms": 8710,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "Given a total spend of 57,602,345.2 with IBM, this amount falls into the category of \"Above $[D],\" which exceeds the highest threshold mentioned. The requirements for this category are as follows:\n\n- **Procurement Method Required**: Full tender + Board endorsement\n- **Minimum Quotes**: Full market approach\n- **Approver**: Board / CEO\n\nTherefore, you would need to follow the full tender process and obtain endorsement from the Board or CEO [1].",
+      "answer": "The total spend with IBM is 57,602,345.2.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
       "pass": true
     },
     {
@@ -81,10 +81,10 @@
       },
       "chat_completion_count": 7,
       "embedding_call_count": 1,
-      "total_latency_ms": 8193,
+      "total_latency_ms": 36235,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "The department with the highest overall spend is the Health Care Services, Department of, with a total spend of 30,942,173,447.57.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
+      "answer": "The department that spent the most overall is the Health Care Services, Department of, with a total spend of 30,942,173,447.57.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
       "pass": true
     },
     {
@@ -110,10 +110,10 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 1,
-      "total_latency_ms": 4450,
+      "total_latency_ms": 4817,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "The approval process for a total spend of 57,602,345.2 would fall under the category \"Above $[D]\" based on the approval thresholds outlined in the procurement guidelines. For this category, a full tender and Board endorsement is required, with a full market approach, and the approver would be the Board or CEO [1]. \n\nIf you need further assistance or clarification, I suggest escalating this to the L2 procurement team.",
+      "answer": "I couldn't verify a reliable answer to this from the available procurement knowledge base or data. Please escalate this question to the L2 procurement team.",
       "pass": true
     },
     {
@@ -139,10 +139,37 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 0,
-      "total_latency_ms": 3707,
+      "total_latency_ms": 3330,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "The current total spend with IBM is $57,602,345.20.",
+      "pass": true
+    },
+    {
+      "id": "a6",
+      "is_live": true,
+      "description": "compliance/approval question must retrieve policy evidence, not be answered by the planner or FINISH with zero tools",
+      "question": "Can we continue buying laptops from supplier ABC without competitive tender approval?",
+      "conversation_context": null,
+      "expected_action_sequence": [
+        "policy_answer"
+      ],
+      "actual_action_sequence": [
+        "policy_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 2,
+      "total_tool_executions": 1,
+      "executions_per_tool": {
+        "policy_answer": 1
+      },
+      "chat_completion_count": 4,
+      "embedding_call_count": 1,
+      "total_latency_ms": 6817,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "I couldn't verify a reliable answer to this from the available procurement knowledge base or data. Please escalate this question to the L2 procurement team.",
       "pass": true
     }
   ],
@@ -269,13 +296,13 @@
     }
   ],
   "summary": {
-    "n_cases": 9,
-    "n_pass": 9,
+    "n_cases": 10,
+    "n_pass": 10,
     "n_fail": 0
   },
   "live_latency_summary": {
-    "n_live_cases": 5,
-    "p50_latency_ms": 5708,
-    "p95_latency_ms": 9712
+    "n_live_cases": 6,
+    "p50_latency_ms": 5817,
+    "p95_latency_ms": 36235
   }
 }

@@ -273,6 +273,9 @@ def run():
     print("[a5] memory as context, not evidence...")
     live_results.append(run_live_case(by_id["a5"], resolve_history=lambda h: [{"user": h[0]["user"], "assistant": r1["answer"]}]))
 
+    print("[a6] compliance/approval question must retrieve policy evidence...")
+    live_results.append(run_live_case(by_id["a6"]))
+
     print("[b1] duplicate-call prevention (deterministic)...")
     deterministic_results.append(duplicate_prevention_case())
 
