@@ -35,6 +35,7 @@ export function V2MessageBubble({ message }: { message: V2ChatMessage }) {
               plannerDecisionCount={message.response.planner_decision_count}
               toolCallCount={message.response.tool_call_count}
               events={message.response.agent_trace}
+              groundedness={message.response.groundedness}
               totalMs={message.response.total_latency_ms}
             />
           </>

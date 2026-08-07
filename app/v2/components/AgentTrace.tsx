@@ -1,12 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import type { AgentStatus, TraceEvent } from "../types";
+import type { AgentStatus, GroundednessResult, TraceEvent } from "../types";
 
 // Styled after app/components/PipelineTrace.tsx's collapsible pattern. Renders only
-// the structured TraceEvent list the API returns -- there is no raw model reasoning,
+// the structured TraceEvent list (plus the existing `groundedness` field, both already
+// part of the V2 API response) the API returns -- there is no raw model reasoning,
 // prompt text, or hidden chain-of-thought anywhere in this component's props, by
 // construction (see api/agents/trace.py's build_trace()).
+//
+// formatTraceEvent() below is a presentation-only relabeling pass: it maps the backend's
+// existing event/label/status fields onto the Plan -> Act -> Verify -> Observe -> Finish
+// wording, using only data already present in the API response. It does not add any new
+// backend field -- the policy QA score, when shown, is read from the existing
+// `groundedness` response field (unchanged), correlated to the right VERIFY line by
+// chronological order (both `groundedness` and the trace's qa_result events are appended
+// in the same per-iteration sequence server-side, so positional pairing is exact).
 
 const AGENT_STATUS_LABEL: Record<AgentStatus, string> = {
   in_progress: "In progress",
@@ -16,8 +25,79 @@ const AGENT_STATUS_LABEL: Record<AgentStatus, string> = {
   tool_failed: "Tool failed",
 };
 
-function groupByIteration(events: TraceEvent[]): { iteration: number | null; events: TraceEvent[] }[] {
-  const groups: { iteration: number | null; events: TraceEvent[] }[] = [];
+const TOOL_DISPLAY_NAME: Record<string, string> = {
+  policy_answer: "Policy Retrieval",
+  procurement_data_answer: "Procurement Spend Query",
+};
+
+function toolFromPlannerLabel(label: string): string | null {
+  const match = label.match(/Planner → (policy_answer|procurement_data_answer)/);
+  return match ? match[1] : null;
+}
+
+interface DisplayEvent {
+  iteration: number | null;
+  text: string;
+  status: TraceEvent["status"];
+}
+
+function formatTraceEvents(events: TraceEvent[], groundedness: GroundednessResult[], toolCallCount: number): DisplayEvent[] {
+  const policyGroundedness = groundedness.filter((g) => g.path === "policy");
+  let policyIdx = 0;
+  let currentTool: string | null = null;
+
+  return events.map((e): DisplayEvent => {
+    if (e.event === "planner_decision") {
+      currentTool = toolFromPlannerLabel(e.label);
+      const display = currentTool ? TOOL_DISPLAY_NAME[currentTool] : e.label;
+      return { iteration: e.iteration, text: `PLAN — Planner selected ${display}`, status: e.status };
+    }
+
+    if (e.event === "tool_call") {
+      const display = currentTool ? TOOL_DISPLAY_NAME[currentTool] : "Tool";
+      const verb = e.status === "failed" ? "failed" : "completed";
+      return { iteration: e.iteration, text: `ACT — ${display} ${verb}`, status: e.status };
+    }
+
+    if (e.event === "qa_result") {
+      const passLabel = e.status === "passed" ? "PASS" : "FAIL";
+      if (currentTool === "policy_answer") {
+        const g = policyGroundedness[policyIdx++];
+        const scoreSuffix = g && typeof g.score === "number" ? ` (score ${g.score}/5)` : "";
+        return { iteration: e.iteration, text: `VERIFY — Policy Groundedness QA: ${passLabel}${scoreSuffix}`, status: e.status };
+      }
+      if (currentTool === "procurement_data_answer") {
+        return { iteration: e.iteration, text: `VERIFY — Data Result Validation: ${passLabel}`, status: e.status };
+      }
+      return { iteration: e.iteration, text: e.label, status: e.status };
+    }
+
+    if (e.event === "observation_recorded") {
+      return { iteration: e.iteration, text: "OBSERVE — Tool result recorded for the next planner decision", status: e.status };
+    }
+
+    if (e.event === "finish") {
+      // Deliberately avoids asserting an internal judgment ("determined... sufficient")
+      // the system has no way to observe -- PlannerAction carries no reasoning field, so
+      // FINISH is only ever an observable action, never a verified conclusion. Wording
+      // states the mechanical fact only, chosen from the existing toolCallCount field,
+      // and does not claim evidence was collected when nothing was actually executed
+      // this turn (a genuine zero-tool FINISH -- e.g. out-of-scope).
+      const text =
+        toolCallCount > 0
+          ? "FINISH — Planner selected FINISH after reviewing available observations"
+          : "FINISH — Planner selected FINISH without calling a procurement capability";
+      return { iteration: e.iteration, text, status: e.status };
+    }
+
+    // memory_context, duplicate_blocked, per_tool_limit_blocked, budget_exhausted,
+    // failure, status: preserved unchanged -- out of the requested relabeling scope.
+    return { iteration: e.iteration, text: e.label, status: e.status };
+  });
+}
+
+function groupByIteration(events: DisplayEvent[]): { iteration: number | null; events: DisplayEvent[] }[] {
+  const groups: { iteration: number | null; events: DisplayEvent[] }[] = [];
   for (const e of events) {
     const last = groups[groups.length - 1];
     if (last && last.iteration === e.iteration) {
@@ -35,6 +115,7 @@ export function AgentTrace({
   plannerDecisionCount,
   toolCallCount,
   events,
+  groundedness,
   totalMs,
 }: {
   agentStatus: AgentStatus;
@@ -42,10 +123,12 @@ export function AgentTrace({
   plannerDecisionCount: number;
   toolCallCount: number;
   events: TraceEvent[];
+  groundedness: GroundednessResult[];
   totalMs: number;
 }) {
   const [open, setOpen] = useState(false);
-  const groups = groupByIteration(events);
+  const displayEvents = formatTraceEvents(events, groundedness, toolCallCount);
+  const groups = groupByIteration(displayEvents);
 
   return (
     <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 text-xs">
@@ -83,7 +166,7 @@ export function AgentTrace({
                   >
                     <span>
                       {e.status === "passed" ? "✓ " : e.status === "failed" ? "✗ " : e.status === "blocked" ? "⚠ " : ""}
-                      {e.label}
+                      {e.text}
                     </span>
                   </div>
                 ))}
