@@ -21,7 +21,8 @@ LLM/infrastructure failure that degraded to the same empty tool list.
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from .contracts import PlannerDecision
+from . import memory
+from .contracts import PlannerAction, PlannerDecision
 from .store import get_chat_model
 
 CANONICAL_TOOL_ORDER = ("policy_answer", "procurement_data_answer")
@@ -108,3 +109,131 @@ def plan(query: str) -> dict:
         "planner_failed": planner_failed,
         "planner_error": planner_error,
     }
+
+
+# ---------------------------------------------------------------------------
+# Step 3B: bounded plan -> act -> observe agent loop. plan_next_action()
+# decides ONE next step at a time (CALL_TOOL a specific capability, or
+# FINISH), conditioned on this turn's real observations so far -- unlike
+# plan() above, which commits to a full set of capabilities upfront and never
+# sees a tool's result. Execution order/budget enforcement is NOT this
+# function's job (see graph_v2.py); this is purely "what's the next step."
+# ---------------------------------------------------------------------------
+
+AGENT_SYSTEM_PROMPT = """You are the planning agent for a Level 1 procurement helpdesk chatbot at a \
+pharmaceutical company. The company runs SAP Ariba for its procurement processes and has \
+historical Purchase Order (PO) and Invoice data.
+
+You operate in a bounded plan-act-observe loop. Each time you're asked, decide the SINGLE next \
+step: call one specific capability, or FINISH if you already have sufficient grounded evidence \
+from THIS TURN's tool observations to fully and accurately answer the user's current question.
+
+Two available capabilities:
+- "policy_answer": needs company procurement policy, process, or systems knowledge (e.g. contract \
+vs. PO rules, spend thresholds, Ariba/supplier-portal how-tos, sourcing events, supplier \
+lifecycle, UNSPSC classification concepts and hierarchy, contract compliance).
+- "procurement_data_answer": needs analysis over historical structured data (spend by \
+department/supplier, PO counts, invoice amounts, UNSPSC code lookups, payment/settlement timing).
+
+IMPORTANT -- conversation history vs. evidence:
+Prior conversation turns below are provided ONLY to help you understand what the user is \
+currently asking about (e.g. resolving "it" / "that purchase" / "them" to a specific supplier, \
+category, or amount mentioned earlier in this session). A prior assistant answer is NOT verified \
+evidence for the CURRENT turn -- even if a fact was stated earlier, you must obtain current, \
+grounded evidence via a tool call this turn if the current question needs it. Never answer purely \
+from what a previous assistant message said; use history only to resolve what the question refers \
+to, then get fresh evidence.
+
+Rules for calling a tool:
+- Call a tool only for genuinely missing information that this turn's observations don't already \
+cover.
+- You may call the SAME tool more than once ONLY if a new observation this turn creates a \
+meaningfully different, more specific input (e.g. you learned the purchase amount and now need \
+the policy answer for that specific amount). Do not call the same tool again with substantially \
+the same input -- that wastes budget and will be blocked.
+- FINISH as soon as your collected observations from this turn are sufficient. Do not keep going \
+"to be thorough" once you already have what's needed.
+
+Conversation history (context for reference resolution only, NOT evidence):
+{conversation_history}
+
+Actions taken this turn so far:
+{actions_taken}
+
+Observations so far this turn:
+{observations}
+
+Remaining budget: {remaining_decisions} planner decisions left, {remaining_tool_calls} tool \
+calls left (max 3 executions per individual capability).
+
+Respond with strict JSON: {{"action": "CALL_TOOL"|"FINISH", "tool": "policy_answer"|\
+"procurement_data_answer"|null, "input": "<specific question to send the tool>"|null}}"""
+
+_agent_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", AGENT_SYSTEM_PROMPT),
+        ("human", "{query}"),
+    ]
+)
+
+
+def _render_actions_taken(actions_taken: list) -> str:
+    if not actions_taken:
+        return "(none yet)"
+    lines = []
+    for a in actions_taken:
+        if a["action"] == "FINISH":
+            lines.append(f"{a['decision_number']}. FINISH")
+        else:
+            lines.append(f"{a['decision_number']}. CALL_TOOL {a['tool']} with input: {a['input']!r}")
+    return "\n".join(lines)
+
+
+def _render_observations(observations: list) -> str:
+    if not observations:
+        return "(none yet)"
+    lines = []
+    for o in observations:
+        qa_note = ""
+        if o.get("qa_passed") is not None:
+            qa_note = f" [groundedness check: {'PASSED' if o['qa_passed'] else 'FAILED'}]"
+        summary = (o.get("answer_summary") or "")[:400]
+        lines.append(f"- {o['tool']} ({o['status']}){qa_note}: {summary}")
+    return "\n".join(lines)
+
+
+def plan_next_action(
+    query: str,
+    conversation_history: list,
+    actions_taken: list,
+    observations: list,
+    remaining_decisions: int,
+    remaining_tool_calls: int,
+) -> dict:
+    chain = _agent_prompt | get_chat_model().with_structured_output(
+        PlannerAction, method="json_schema", strict=True
+    )
+    try:
+        action = chain.invoke(
+            {
+                "query": query,
+                "conversation_history": memory.render_history_for_prompt(conversation_history),
+                "actions_taken": _render_actions_taken(actions_taken),
+                "observations": _render_observations(observations),
+                "remaining_decisions": remaining_decisions,
+                "remaining_tool_calls": remaining_tool_calls,
+            }
+        )
+        # Cross-field validation, never trusted to the schema alone (same discipline as
+        # every other structured-output contract in this codebase): CALL_TOOL requires
+        # both tool and input; anything inconsistent is treated as a planner failure.
+        if action.action == "CALL_TOOL" and (not action.tool or not action.input):
+            raise ValueError("CALL_TOOL action missing required tool/input")
+        planner_failed = False
+        planner_error = None
+    except Exception as e:
+        action = PlannerAction(action="FINISH", tool=None, input=None)
+        planner_failed = True
+        planner_error = str(e)
+
+    return {"action": action, "planner_failed": planner_failed, "planner_error": planner_error}

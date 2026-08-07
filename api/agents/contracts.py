@@ -57,6 +57,28 @@ class ProcurementDataInput(BaseModel):
     query: str
 
 
+class PlannerAction(BaseModel):
+    """Structured output for planner.plan_next_action() -- Step 3B. Deliberately
+    has NO free-form reasoning/rationale field: the model is instructed how to
+    decide via the system prompt, but nothing free-form is captured or stored.
+    Cross-field consistency (CALL_TOOL requires tool+input; FINISH ignores both)
+    is validated in code after parsing, not trusted to the schema alone -- same
+    discipline as every other structured-output contract in this codebase."""
+
+    action: Literal["CALL_TOOL", "FINISH"]
+    tool: Optional[Literal["policy_answer", "procurement_data_answer"]] = None
+    input: Optional[str] = None
+
+
+class ConversationTurn(BaseModel):
+    """One user+assistant pair -- the explicit wire format for conversation
+    memory (Step 3B), sent as already-paired turns rather than a flat message
+    list so the server never has to guess how to pair messages up."""
+
+    user: str
+    assistant: str
+
+
 class RAGResult(BaseModel):
     answer: str
     citations: list[dict]

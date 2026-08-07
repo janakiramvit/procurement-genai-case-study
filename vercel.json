@@ -2,6 +2,12 @@
   "functions": {
     "api/chat.py": {
       "maxDuration": 60
+    },
+    "api/v1/chat.py": {
+      "maxDuration": 60
+    },
+    "api/v2/chat.py": {
+      "maxDuration": 60
     }
   }
 }

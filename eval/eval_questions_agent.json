@@ -1,0 +1,46 @@
+[
+  {
+    "id": "a1",
+    "description": "early FINISH after one tool",
+    "conversation_history": [],
+    "query": "What is our total spend with IBM?",
+    "expected_tools": ["procurement_data_answer"],
+    "note": "Simple single-capability question -- expect one tool call then FINISH, not a padded-out loop. Grounded in the real purchase_orders table."
+  },
+  {
+    "id": "a2",
+    "description": "two-tool observation-driven sequence",
+    "conversation_history": [],
+    "query": "What approvals or contract requirements apply given our total spend with IBM?",
+    "expected_tools": ["procurement_data_answer", "policy_answer"],
+    "note": "Grounded in the real, already-verified IBM spend figure ($57.6M, confirmed in this project's own eval runs). The exact approval threshold in the source policy deck (Procurement_Guidelines.pptx) has a documented unresolved '$[C]' placeholder -- an honest agent may report that gap rather than inventing a number, which is itself evidence the safety behavior still holds under the agent loop."
+  },
+  {
+    "id": "a3",
+    "description": "legitimate same-tool refinement based on an observation",
+    "conversation_history": [],
+    "query": "Which department spent the most overall, and what's the approval threshold for a purchase at that department's spend level?",
+    "expected_tools": ["procurement_data_answer", "policy_answer"],
+    "note": "Best-effort live probe for same-tool-twice refinement (e.g. a follow-up data lookup once the top department is known). Natural elicitation from a live model isn't reliably scriptable; the underlying mechanism itself (a second call to the same tool with a meaningfully different input is allowed, an identical repeat is blocked) is separately verified deterministically in tests/test_agent_loop.py -- this case reports whatever sequence the live planner actually produces, not a forced outcome."
+  },
+  {
+    "id": "a4",
+    "description": "memory-dependent follow-up",
+    "conversation_history": [
+      { "user": "What is our total spend with IBM?", "assistant": "(populated at eval time from a2's actual answer)" }
+    ],
+    "query": "What approval applies?",
+    "expected_tools": ["policy_answer"],
+    "note": "Ambiguous on its own -- conversation history should resolve 'what approval' to IBM's spend context without the entity being restated."
+  },
+  {
+    "id": "a5",
+    "description": "memory as context, not evidence",
+    "conversation_history": [
+      { "user": "What is our total spend with IBM?", "assistant": "(populated at eval time)" }
+    ],
+    "query": "Has that changed -- what's our current total spend with IBM?",
+    "expected_tools": ["procurement_data_answer"],
+    "note": "Must trigger a FRESH procurement_data_answer tool call this turn, not just restate the number from the prior assistant message -- this is the direct test of 'memory is context, not evidence.'"
+  }
+]

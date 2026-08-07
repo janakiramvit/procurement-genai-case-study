@@ -1,0 +1,281 @@
+{
+  "live_results": [
+    {
+      "id": "a1",
+      "is_live": true,
+      "description": "early FINISH after one tool",
+      "question": "What is our total spend with IBM?",
+      "conversation_context": null,
+      "expected_action_sequence": [
+        "procurement_data_answer"
+      ],
+      "actual_action_sequence": [
+        "procurement_data_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 2,
+      "total_tool_executions": 1,
+      "executions_per_tool": {
+        "procurement_data_answer": 1
+      },
+      "chat_completion_count": 4,
+      "embedding_call_count": 0,
+      "total_latency_ms": 5708,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "The total spend with IBM is 57,602,345.2.",
+      "pass": true
+    },
+    {
+      "id": "a2",
+      "is_live": true,
+      "description": "two-tool observation-driven sequence",
+      "question": "What approvals or contract requirements apply given our total spend with IBM?",
+      "conversation_context": null,
+      "expected_action_sequence": [
+        "procurement_data_answer",
+        "policy_answer"
+      ],
+      "actual_action_sequence": [
+        "procurement_data_answer",
+        "policy_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 3,
+      "total_tool_executions": 2,
+      "executions_per_tool": {
+        "procurement_data_answer": 1,
+        "policy_answer": 1
+      },
+      "chat_completion_count": 8,
+      "embedding_call_count": 1,
+      "total_latency_ms": 9712,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "Given a total spend of 57,602,345.2 with IBM, this amount falls into the category of \"Above $[D],\" which exceeds the highest threshold mentioned. The requirements for this category are as follows:\n\n- **Procurement Method Required**: Full tender + Board endorsement\n- **Minimum Quotes**: Full market approach\n- **Approver**: Board / CEO\n\nTherefore, you would need to follow the full tender process and obtain endorsement from the Board or CEO [1].",
+      "pass": true
+    },
+    {
+      "id": "a3",
+      "is_live": true,
+      "description": "legitimate same-tool refinement based on an observation",
+      "question": "Which department spent the most overall, and what's the approval threshold for a purchase at that department's spend level?",
+      "conversation_context": null,
+      "expected_action_sequence": [
+        "procurement_data_answer",
+        "policy_answer"
+      ],
+      "actual_action_sequence": [
+        "procurement_data_answer",
+        "policy_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 3,
+      "total_tool_executions": 2,
+      "executions_per_tool": {
+        "procurement_data_answer": 1,
+        "policy_answer": 1
+      },
+      "chat_completion_count": 7,
+      "embedding_call_count": 1,
+      "total_latency_ms": 8193,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "The department with the highest overall spend is the Health Care Services, Department of, with a total spend of 30,942,173,447.57.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
+      "pass": true
+    },
+    {
+      "id": "a4",
+      "is_live": true,
+      "description": "memory-dependent follow-up",
+      "question": "What approval applies?",
+      "conversation_context": [
+        "What is our total spend with IBM?"
+      ],
+      "expected_action_sequence": [
+        "policy_answer"
+      ],
+      "actual_action_sequence": [
+        "policy_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 2,
+      "total_tool_executions": 1,
+      "executions_per_tool": {
+        "policy_answer": 1
+      },
+      "chat_completion_count": 4,
+      "embedding_call_count": 1,
+      "total_latency_ms": 4450,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "The approval process for a total spend of 57,602,345.2 would fall under the category \"Above $[D]\" based on the approval thresholds outlined in the procurement guidelines. For this category, a full tender and Board endorsement is required, with a full market approach, and the approver would be the Board or CEO [1]. \n\nIf you need further assistance or clarification, I suggest escalating this to the L2 procurement team.",
+      "pass": true
+    },
+    {
+      "id": "a5",
+      "is_live": true,
+      "description": "memory as context, not evidence",
+      "question": "Has that changed -- what's our current total spend with IBM?",
+      "conversation_context": [
+        "What is our total spend with IBM?"
+      ],
+      "expected_action_sequence": [
+        "procurement_data_answer"
+      ],
+      "actual_action_sequence": [
+        "procurement_data_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 2,
+      "total_tool_executions": 1,
+      "executions_per_tool": {
+        "procurement_data_answer": 1
+      },
+      "chat_completion_count": 4,
+      "embedding_call_count": 0,
+      "total_latency_ms": 3707,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "The current total spend with IBM is $57,602,345.20.",
+      "pass": true
+    }
+  ],
+  "deterministic_results": [
+    {
+      "id": "b1",
+      "is_live": false,
+      "description": "duplicate-call prevention (identical tool+input blocked)",
+      "question": "(deterministic/mocked scenario -- not a live question, no real LLM calls made)",
+      "conversation_context": null,
+      "expected_action_sequence": [
+        "policy_answer"
+      ],
+      "actual_action_sequence": [
+        "policy_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 3,
+      "total_tool_executions": 1,
+      "executions_per_tool": {
+        "policy_answer": 1
+      },
+      "chat_completion_count": 0,
+      "embedding_call_count": 0,
+      "total_latency_ms": null,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "Policy answer text.",
+      "pass": true
+    },
+    {
+      "id": "b2",
+      "is_live": false,
+      "description": "per-tool execution boundary (max 3)",
+      "question": "(deterministic/mocked scenario -- not a live question, no real LLM calls made)",
+      "conversation_context": null,
+      "expected_action_sequence": [
+        "policy_answer",
+        "policy_answer",
+        "policy_answer"
+      ],
+      "actual_action_sequence": [
+        "policy_answer",
+        "policy_answer",
+        "policy_answer"
+      ],
+      "expected_termination": "finished",
+      "actual_termination": "finished",
+      "planner_decisions": 6,
+      "total_tool_executions": 3,
+      "executions_per_tool": {
+        "policy_answer": 3
+      },
+      "chat_completion_count": 0,
+      "embedding_call_count": 0,
+      "total_latency_ms": null,
+      "agent_status": "finished",
+      "termination_reason": "planner determined sufficient evidence",
+      "answer": "Policy answer text.",
+      "pass": true
+    },
+    {
+      "id": "b3",
+      "is_live": false,
+      "description": "global tool-execution boundary (max 6)",
+      "question": "(deterministic/mocked scenario -- not a live question, no real LLM calls made)",
+      "conversation_context": null,
+      "expected_action_sequence": null,
+      "actual_action_sequence": [
+        "policy_answer",
+        "procurement_data_answer",
+        "policy_answer",
+        "procurement_data_answer",
+        "policy_answer",
+        "procurement_data_answer"
+      ],
+      "expected_termination": "budget_exhausted",
+      "actual_termination": "budget_exhausted",
+      "planner_decisions": 7,
+      "total_tool_executions": 6,
+      "executions_per_tool": {
+        "policy_answer": 3,
+        "procurement_data_answer": 3
+      },
+      "chat_completion_count": 0,
+      "embedding_call_count": 0,
+      "total_latency_ms": null,
+      "agent_status": "budget_exhausted",
+      "termination_reason": "max tool executions (6) reached",
+      "answer": "Combined.",
+      "pass": true
+    },
+    {
+      "id": "b4",
+      "is_live": false,
+      "description": "planner-decision boundary (max 7)",
+      "question": "(deterministic/mocked scenario -- not a live question, no real LLM calls made)",
+      "conversation_context": null,
+      "expected_action_sequence": null,
+      "actual_action_sequence": [
+        "policy_answer",
+        "procurement_data_answer",
+        "policy_answer",
+        "procurement_data_answer",
+        "policy_answer",
+        "procurement_data_answer"
+      ],
+      "expected_termination": "budget_exhausted",
+      "actual_termination": "budget_exhausted",
+      "planner_decisions": 7,
+      "total_tool_executions": 6,
+      "executions_per_tool": {
+        "policy_answer": 3,
+        "procurement_data_answer": 3
+      },
+      "chat_completion_count": 0,
+      "embedding_call_count": 0,
+      "total_latency_ms": null,
+      "agent_status": "budget_exhausted",
+      "termination_reason": "max tool executions (6) reached",
+      "answer": "Combined.",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "n_cases": 9,
+    "n_pass": 9,
+    "n_fail": 0
+  },
+  "live_latency_summary": {
+    "n_live_cases": 5,
+    "p50_latency_ms": 5708,
+    "p95_latency_ms": 9712
+  }
+}
