@@ -21,10 +21,10 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 0,
-      "total_latency_ms": 4218,
+      "total_latency_ms": 5056,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "Your total spend with IBM is $57,944,836.32.",
+      "answer": "Our total spend with IBM is $57,602,345.20.",
       "pass": true
     },
     {
@@ -49,12 +49,12 @@
         "procurement_data_answer": 1,
         "policy_answer": 1
       },
-      "chat_completion_count": 7,
+      "chat_completion_count": 8,
       "embedding_call_count": 1,
-      "total_latency_ms": 8710,
+      "total_latency_ms": 8200,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "The total spend with IBM is 57,602,345.2.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
+      "answer": "Given your total spend with IBM of 57,602,345.2, this amount exceeds the threshold of $[D] as indicated in the approval thresholds. According to the procurement guidelines, for any spend above $[D], a full tender and Board endorsement is required, along with a full market approach. The approver in this case would be the Board or CEO [1]. For specific contract requirements or additional details regarding the procurement process with IBM, I recommend escalating this question to the L2 procurement team, as the provided passages do not contain further information on that matter.",
       "pass": true
     },
     {
@@ -81,7 +81,7 @@
       },
       "chat_completion_count": 7,
       "embedding_call_count": 1,
-      "total_latency_ms": 36235,
+      "total_latency_ms": 7136,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "The department that spent the most overall is the Health Care Services, Department of, with a total spend of 30,942,173,447.57.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
@@ -103,14 +103,14 @@
       ],
       "expected_termination": "finished",
       "actual_termination": "finished",
-      "planner_decisions": 2,
+      "planner_decisions": 3,
       "total_tool_executions": 1,
       "executions_per_tool": {
         "policy_answer": 1
       },
-      "chat_completion_count": 4,
+      "chat_completion_count": 5,
       "embedding_call_count": 1,
-      "total_latency_ms": 4817,
+      "total_latency_ms": 4062,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "I couldn't verify a reliable answer to this from the available procurement knowledge base or data. Please escalate this question to the L2 procurement team.",
@@ -139,7 +139,7 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 0,
-      "total_latency_ms": 3330,
+      "total_latency_ms": 3281,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "The current total spend with IBM is $57,602,345.20.",
@@ -166,7 +166,7 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 1,
-      "total_latency_ms": 6817,
+      "total_latency_ms": 3807,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "I couldn't verify a reliable answer to this from the available procurement knowledge base or data. Please escalate this question to the L2 procurement team.",
@@ -302,7 +302,7 @@
   },
   "live_latency_summary": {
     "n_live_cases": 6,
-    "p50_latency_ms": 5817,
-    "p95_latency_ms": 36235
+    "p50_latency_ms": 4559,
+    "p95_latency_ms": 8200
   }
 }

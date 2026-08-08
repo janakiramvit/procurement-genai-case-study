@@ -168,6 +168,10 @@ cover.
 meaningfully different, more specific input (e.g. you learned the purchase amount and now need \
 the policy answer for that specific amount). Do not call the same tool again with substantially \
 the same input -- that wastes budget and will be blocked.
+- If your most-recent action was BLOCKED (duplicate or per-tool-limit) or its evidence FAILED the \
+groundedness/validation check, do NOT propose the same tool with equivalent input again. Instead, \
+either call a genuinely different capability that could add new evidence, or FINISH with whatever \
+evidence you have.
 - FINISH with the observations already gathered as soon as they are sufficient. Do not keep going \
 "to be thorough" once you already have what's needed.
 - FINISH with ZERO tool calls only when the question is clearly outside the procurement domain \
