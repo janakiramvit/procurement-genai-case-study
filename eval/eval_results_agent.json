@@ -21,10 +21,10 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 0,
-      "total_latency_ms": 6778,
+      "total_latency_ms": 4312,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "Your total spend with IBM is $57,944,836.32.",
+      "answer": "Our total spend with IBM is $57,944,836.32.",
       "pass": true
     },
     {
@@ -51,7 +51,7 @@
       },
       "chat_completion_count": 7,
       "embedding_call_count": 1,
-      "total_latency_ms": 7784,
+      "total_latency_ms": 8515,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "The total spend with IBM is 57,602,345.2.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
@@ -81,7 +81,7 @@
       },
       "chat_completion_count": 7,
       "embedding_call_count": 1,
-      "total_latency_ms": 8943,
+      "total_latency_ms": 12597,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "The department that spent the most overall is the Health Care Services, Department of, with a total spend of 30,942,173,447.57.\n\n(Note: I couldn't reliably confirm the related policy for this -- please verify separately or escalate to L2.)",
@@ -110,7 +110,7 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 1,
-      "total_latency_ms": 5708,
+      "total_latency_ms": 6982,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "I couldn't verify a reliable answer to this from the available procurement knowledge base or data. Please escalate this question to the L2 procurement team.",
@@ -139,10 +139,10 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 0,
-      "total_latency_ms": 5729,
+      "total_latency_ms": 4668,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
-      "answer": "The current total spend with IBM is $57,602,345.20.",
+      "answer": "Your current total spend with IBM is $57,602,345.20.",
       "pass": true
     },
     {
@@ -166,7 +166,7 @@
       },
       "chat_completion_count": 4,
       "embedding_call_count": 1,
-      "total_latency_ms": 5014,
+      "total_latency_ms": 5366,
       "agent_status": "finished",
       "termination_reason": "planner determined sufficient evidence",
       "answer": "I couldn't verify a reliable answer to this from the available procurement knowledge base or data. Please escalate this question to the L2 procurement team.",
@@ -302,7 +302,7 @@
   },
   "live_latency_summary": {
     "n_live_cases": 6,
-    "p50_latency_ms": 6254,
-    "p95_latency_ms": 8943
+    "p50_latency_ms": 6174,
+    "p95_latency_ms": 12597
   }
 }

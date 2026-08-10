@@ -50,6 +50,9 @@ export interface TraceEvent {
   // readout of its internal computation, just a one-turn explanation surfaced for
   // demo/interpretability purposes. See PlannerAction in api/agents/contracts.py.
   reasoning?: string | null;
+  // The exact query text the planner constructed and sent to the tool for this
+  // decision (already existed server-side in actions_taken; not new model output).
+  tool_input?: string | null;
 }
 
 export interface V2ChatResponse {

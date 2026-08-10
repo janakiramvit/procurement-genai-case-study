@@ -3,11 +3,13 @@
 build_trace() is a pure function over already-structured state
 (actions_taken / observations / conversation_history / agent_status /
 termination_reason). It never touches raw LLM messages or prompt text --
-the only model-generated free text it can surface is PlannerAction.reasoning
-(see contracts.py), a deliberately bounded, one-turn, non-fed-back
-explanation string threaded through actions_taken. There is no code path
-through which raw prompts or a genuine chain-of-thought could reach a
-TraceEvent.
+the two pieces of model-generated/model-directed text it can surface are
+PlannerAction.reasoning (see contracts.py), a deliberately bounded, one-turn,
+non-fed-back explanation string, and the tool input the planner actually
+constructed (already part of actions_taken, now also exposed as
+TraceEvent.tool_input) -- both threaded through actions_taken. There is no
+code path through which raw prompts or a genuine chain-of-thought could
+reach a TraceEvent.
 
 QA labels are deliberately different per capability, per the actual
 implementation in qa.py: "Policy Groundedness QA" for the real LLM-judge
@@ -44,6 +46,7 @@ class TraceEvent(BaseModel):
     label: str
     status: Optional[Literal["completed", "failed", "passed", "blocked"]] = None
     reasoning: Optional[str] = None
+    tool_input: Optional[str] = None
 
 
 def build_trace(final_state: dict) -> list[TraceEvent]:
@@ -71,6 +74,7 @@ def build_trace(final_state: dict) -> list[TraceEvent]:
                         event="planner_decision",
                         label=f"Planner → {a['tool']}",
                         reasoning=a.get("reasoning"),
+                        tool_input=a.get("input"),
                     )
                 )
                 obs = observations_by_decision.get(n)
@@ -103,6 +107,7 @@ def build_trace(final_state: dict) -> list[TraceEvent]:
                         label=f"Planner → {a['tool']} (blocked: identical call already made this turn)",
                         status="blocked",
                         reasoning=a.get("reasoning"),
+                        tool_input=a.get("input"),
                     )
                 )
             elif a["status"] == "blocked_per_tool_limit":
@@ -113,6 +118,7 @@ def build_trace(final_state: dict) -> list[TraceEvent]:
                         label=f"Planner → {a['tool']} (blocked: per-capability limit reached)",
                         status="blocked",
                         reasoning=a.get("reasoning"),
+                        tool_input=a.get("input"),
                     )
                 )
         elif a["action"] == "FINISH":

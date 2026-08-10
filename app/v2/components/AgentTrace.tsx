@@ -43,6 +43,7 @@ interface DisplayEvent {
   text: string;
   status: TraceEvent["status"];
   reasoning?: string | null;
+  toolInput?: string | null;
 }
 
 function formatTraceEvents(events: TraceEvent[], groundedness: GroundednessResult[], toolCallCount: number): DisplayEvent[] {
@@ -54,7 +55,13 @@ function formatTraceEvents(events: TraceEvent[], groundedness: GroundednessResul
     if (e.event === "planner_decision") {
       currentTool = toolFromPlannerLabel(e.label);
       const display = currentTool ? TOOL_DISPLAY_NAME[currentTool] : e.label;
-      return { iteration: e.iteration, text: `PLAN — Planner selected ${display}`, status: e.status, reasoning: e.reasoning };
+      return {
+        iteration: e.iteration,
+        text: `PLAN — Planner selected ${display}`,
+        status: e.status,
+        reasoning: e.reasoning,
+        toolInput: e.tool_input,
+      };
     }
 
     if (e.event === "tool_call") {
@@ -96,9 +103,10 @@ function formatTraceEvents(events: TraceEvent[], groundedness: GroundednessResul
 
     // memory_context, duplicate_blocked, per_tool_limit_blocked, budget_exhausted,
     // failure, status: preserved unchanged -- out of the requested relabeling scope.
-    // duplicate_blocked/per_tool_limit_blocked still carry reasoning through (the
-    // model DID have a stated rationale for the call that got blocked).
-    return { iteration: e.iteration, text: e.label, status: e.status, reasoning: e.reasoning };
+    // duplicate_blocked/per_tool_limit_blocked still carry reasoning/toolInput through
+    // (the model DID have a stated rationale and a constructed input for the call that
+    // got blocked).
+    return { iteration: e.iteration, text: e.label, status: e.status, reasoning: e.reasoning, toolInput: e.tool_input };
   });
 }
 
@@ -174,6 +182,9 @@ export function AgentTrace({
                       {e.status === "passed" ? "✓ " : e.status === "failed" ? "✗ " : e.status === "blocked" ? "⚠ " : ""}
                       {e.text}
                     </span>
+                    {e.toolInput && (
+                      <div className="mt-0.5 pl-4 font-mono text-[11px] text-slate-500">Sent to tool: “{e.toolInput}”</div>
+                    )}
                     {e.reasoning && (
                       <div className="mt-0.5 pl-4 italic text-slate-500">Reasoning: “{e.reasoning}”</div>
                     )}

@@ -106,22 +106,24 @@ def test_memory_used_event():
     check("no memory_context event when history is empty", not any(e.event == "memory_context" for e in no_history))
 
 
-def test_reasoning_is_the_only_addition_and_no_prompt_text_can_appear():
+def test_reasoning_and_tool_input_are_the_only_additions():
     # PlannerAction.reasoning is a deliberate, bounded exception (added for
     # demo/interpretability): the model's own brief stated rationale, never raw
-    # prompt text. This test guards that it stayed the ONLY addition -- TraceEvent's
-    # schema still has no field that could hold anything else free-form.
+    # prompt text. tool_input surfaces data that already existed in actions_taken
+    # (the planner's constructed tool query), not anything new from the model.
+    # This test guards that these stayed the ONLY additions -- TraceEvent's schema
+    # still has no field that could hold anything else free-form.
     check("PlannerAction has a bounded reasoning field", "reasoning" in PlannerAction.model_fields)
     check(
-        "TraceEvent's fields are exactly iteration/event/label/status/reasoning -- nothing wider",
-        set(TraceEvent.model_fields.keys()) == {"iteration", "event", "label", "status", "reasoning"},
+        "TraceEvent's fields are exactly iteration/event/label/status/reasoning/tool_input -- nothing wider",
+        set(TraceEvent.model_fields.keys()) == {"iteration", "event", "label", "status", "reasoning", "tool_input"},
     )
     events = build_trace(_state_two_tools_sequential())
     for e in events:
         dumped = e.model_dump()
         check(
             f"event {e.event} dump has no unexpected keys",
-            set(dumped.keys()) <= {"iteration", "event", "label", "status", "reasoning"},
+            set(dumped.keys()) <= {"iteration", "event", "label", "status", "reasoning", "tool_input"},
         )
 
 
@@ -132,7 +134,7 @@ def run():
     test_failure_event_present()
     test_budget_exhausted_event()
     test_memory_used_event()
-    test_reasoning_is_the_only_addition_and_no_prompt_text_can_appear()
+    test_reasoning_and_tool_input_are_the_only_additions()
 
     print()
     if _FAILURES:
