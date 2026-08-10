@@ -106,21 +106,22 @@ def test_memory_used_event():
     check("no memory_context event when history is empty", not any(e.event == "memory_context" for e in no_history))
 
 
-def test_no_raw_reasoning_or_prompt_fields_can_appear():
-    # Structural guarantee, not just a convention: TraceEvent's schema has no field
-    # that could hold free-form reasoning or prompt text, and PlannerAction itself
-    # (contracts.py) has no `reasoning` field at all to leak in the first place.
-    check("PlannerAction has no reasoning field", not hasattr(PlannerAction(action="FINISH"), "reasoning"))
+def test_reasoning_is_the_only_addition_and_no_prompt_text_can_appear():
+    # PlannerAction.reasoning is a deliberate, bounded exception (added for
+    # demo/interpretability): the model's own brief stated rationale, never raw
+    # prompt text. This test guards that it stayed the ONLY addition -- TraceEvent's
+    # schema still has no field that could hold anything else free-form.
+    check("PlannerAction has a bounded reasoning field", "reasoning" in PlannerAction.model_fields)
     check(
-        "TraceEvent's fields are exactly the safe set",
-        set(TraceEvent.model_fields.keys()) == {"iteration", "event", "label", "status"},
+        "TraceEvent's fields are exactly iteration/event/label/status/reasoning -- nothing wider",
+        set(TraceEvent.model_fields.keys()) == {"iteration", "event", "label", "status", "reasoning"},
     )
     events = build_trace(_state_two_tools_sequential())
     for e in events:
         dumped = e.model_dump()
         check(
             f"event {e.event} dump has no unexpected keys",
-            set(dumped.keys()) <= {"iteration", "event", "label", "status"},
+            set(dumped.keys()) <= {"iteration", "event", "label", "status", "reasoning"},
         )
 
 
@@ -131,7 +132,7 @@ def run():
     test_failure_event_present()
     test_budget_exhausted_event()
     test_memory_used_event()
-    test_no_raw_reasoning_or_prompt_fields_can_appear()
+    test_reasoning_is_the_only_addition_and_no_prompt_text_can_appear()
 
     print()
     if _FAILURES:

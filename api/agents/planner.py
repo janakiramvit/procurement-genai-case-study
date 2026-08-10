@@ -190,8 +190,12 @@ Observations so far this turn:
 Remaining budget: {remaining_decisions} planner decisions left, {remaining_tool_calls} tool \
 calls left (max 3 executions per individual capability).
 
+Also include a brief (1-2 sentence) explanation of why you chose this action, referencing the \
+current question and this turn's observations so far.
+
 Respond with strict JSON: {{"action": "CALL_TOOL"|"FINISH", "tool": "policy_answer"|\
-"procurement_data_answer"|null, "input": "<specific question to send the tool>"|null}}"""
+"procurement_data_answer"|null, "input": "<specific question to send the tool>"|null, \
+"reasoning": "<1-2 sentence explanation>"}}"""
 
 _agent_prompt = ChatPromptTemplate.from_messages(
     [

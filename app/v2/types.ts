@@ -46,6 +46,10 @@ export interface TraceEvent {
     | "status";
   label: string;
   status?: "completed" | "failed" | "passed" | "blocked" | null;
+  // The model's own brief, stated rationale for this decision -- not a mechanistic
+  // readout of its internal computation, just a one-turn explanation surfaced for
+  // demo/interpretability purposes. See PlannerAction in api/agents/contracts.py.
+  reasoning?: string | null;
 }
 
 export interface V2ChatResponse {

@@ -122,7 +122,14 @@ def planner_node(state: AgentGraphState) -> dict:
         update["termination_reason"] = "planner determined sufficient evidence"
         update["category"] = planner.derive_category(planner.canonicalize_tools(called))
         update["actions_taken"] = [
-            {"decision_number": next_decision_number, "action": "FINISH", "tool": None, "input": None, "status": "genuine"}
+            {
+                "decision_number": next_decision_number,
+                "action": "FINISH",
+                "tool": None,
+                "input": None,
+                "status": "genuine",
+                "reasoning": action.reasoning,
+            }
         ]
         return update
 
@@ -136,6 +143,7 @@ def tool_execution_node(state: AgentGraphState) -> dict:
     action = state["current_action"]
     tool_name = action["tool"]
     raw_input = action["input"]
+    reasoning = action.get("reasoning")
     decision_number = state.get("planner_decision_count", 0)
 
     normalized = _normalize_input(raw_input)
@@ -146,7 +154,7 @@ def tool_execution_node(state: AgentGraphState) -> dict:
     if is_duplicate:
         return {
             "actions_taken": [
-                {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "blocked_duplicate"}
+                {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "blocked_duplicate", "reasoning": reasoning}
             ],
             "observations": [
                 {
@@ -163,7 +171,7 @@ def tool_execution_node(state: AgentGraphState) -> dict:
     if per_tool_count >= MAX_EXECUTIONS_PER_TOOL:
         return {
             "actions_taken": [
-                {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "blocked_per_tool_limit"}
+                {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "blocked_per_tool_limit", "reasoning": reasoning}
             ],
             "observations": [
                 {
@@ -205,7 +213,7 @@ def tool_execution_node(state: AgentGraphState) -> dict:
     except Exception as e:
         return {
             "actions_taken": [
-                {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "executed"}
+                {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "executed", "reasoning": reasoning}
             ],
             "observations": [
                 {
@@ -227,7 +235,7 @@ def tool_execution_node(state: AgentGraphState) -> dict:
     return {
         **capability_update,
         "actions_taken": [
-            {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "executed"}
+            {"decision_number": decision_number, "action": "CALL_TOOL", "tool": tool_name, "input": raw_input, "status": "executed", "reasoning": reasoning}
         ],
         "observations": [
             {

@@ -5,9 +5,12 @@ import type { AgentStatus, GroundednessResult, TraceEvent } from "../types";
 
 // Styled after app/components/PipelineTrace.tsx's collapsible pattern. Renders only
 // the structured TraceEvent list (plus the existing `groundedness` field, both already
-// part of the V2 API response) the API returns -- there is no raw model reasoning,
-// prompt text, or hidden chain-of-thought anywhere in this component's props, by
-// construction (see api/agents/trace.py's build_trace()).
+// part of the V2 API response) the API returns. The one piece of model-generated free
+// text possible here is TraceEvent.reasoning -- the planner's own brief, stated
+// rationale for a decision, rendered as a distinct "Reasoning:" line so it reads as
+// the model's stated explanation, not a verified fact. There is still no raw prompt
+// text or full chain-of-thought anywhere in this component's props, by construction
+// (see api/agents/trace.py's build_trace() and contracts.py's PlannerAction).
 //
 // formatTraceEvent() below is a presentation-only relabeling pass: it maps the backend's
 // existing event/label/status fields onto the Plan -> Act -> Verify -> Observe -> Finish
@@ -39,6 +42,7 @@ interface DisplayEvent {
   iteration: number | null;
   text: string;
   status: TraceEvent["status"];
+  reasoning?: string | null;
 }
 
 function formatTraceEvents(events: TraceEvent[], groundedness: GroundednessResult[], toolCallCount: number): DisplayEvent[] {
@@ -50,7 +54,7 @@ function formatTraceEvents(events: TraceEvent[], groundedness: GroundednessResul
     if (e.event === "planner_decision") {
       currentTool = toolFromPlannerLabel(e.label);
       const display = currentTool ? TOOL_DISPLAY_NAME[currentTool] : e.label;
-      return { iteration: e.iteration, text: `PLAN — Planner selected ${display}`, status: e.status };
+      return { iteration: e.iteration, text: `PLAN — Planner selected ${display}`, status: e.status, reasoning: e.reasoning };
     }
 
     if (e.event === "tool_call") {
@@ -87,12 +91,14 @@ function formatTraceEvents(events: TraceEvent[], groundedness: GroundednessResul
         toolCallCount > 0
           ? "FINISH — Planner selected FINISH after reviewing available observations"
           : "FINISH — Planner selected FINISH without calling a procurement capability";
-      return { iteration: e.iteration, text, status: e.status };
+      return { iteration: e.iteration, text, status: e.status, reasoning: e.reasoning };
     }
 
     // memory_context, duplicate_blocked, per_tool_limit_blocked, budget_exhausted,
     // failure, status: preserved unchanged -- out of the requested relabeling scope.
-    return { iteration: e.iteration, text: e.label, status: e.status };
+    // duplicate_blocked/per_tool_limit_blocked still carry reasoning through (the
+    // model DID have a stated rationale for the call that got blocked).
+    return { iteration: e.iteration, text: e.label, status: e.status, reasoning: e.reasoning };
   });
 }
 
@@ -156,7 +162,7 @@ export function AgentTrace({
                 {g.events.map((e, ei) => (
                   <div
                     key={ei}
-                    className={`flex items-center justify-between rounded px-2 py-1 ${
+                    className={`rounded px-2 py-1 ${
                       e.status === "passed"
                         ? "bg-green-50 text-green-700"
                         : e.status === "failed" || e.status === "blocked"
@@ -168,6 +174,9 @@ export function AgentTrace({
                       {e.status === "passed" ? "✓ " : e.status === "failed" ? "✗ " : e.status === "blocked" ? "⚠ " : ""}
                       {e.text}
                     </span>
+                    {e.reasoning && (
+                      <div className="mt-0.5 pl-4 italic text-slate-500">Reasoning: “{e.reasoning}”</div>
+                    )}
                   </div>
                 ))}
               </div>

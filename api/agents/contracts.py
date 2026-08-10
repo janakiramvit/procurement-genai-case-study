@@ -58,16 +58,25 @@ class ProcurementDataInput(BaseModel):
 
 
 class PlannerAction(BaseModel):
-    """Structured output for planner.plan_next_action() -- Step 3B. Deliberately
-    has NO free-form reasoning/rationale field: the model is instructed how to
-    decide via the system prompt, but nothing free-form is captured or stored.
-    Cross-field consistency (CALL_TOOL requires tool+input; FINISH ignores both)
-    is validated in code after parsing, not trusted to the schema alone -- same
-    discipline as every other structured-output contract in this codebase."""
+    """Structured output for planner.plan_next_action() -- Step 3B.
+
+    `reasoning` is a deliberate, bounded exception to this file's general
+    permissive-schema discipline: it's the model's own brief, one-turn
+    explanation for the action it chose, surfaced in the execution trace for
+    demo/interpretability purposes. It is NOT a mechanistic readout of the
+    model's internal computation -- it's a stated rationale generated
+    alongside the decision, not a verified cause of it. It is never fed back
+    into a later decision's prompt context (see planner._render_actions_taken,
+    which intentionally omits it) and never contains raw prompt text.
+
+    Cross-field consistency (CALL_TOOL requires tool+input; FINISH ignores
+    both) is validated in code after parsing, not trusted to the schema alone
+    -- same discipline as every other structured-output contract here."""
 
     action: Literal["CALL_TOOL", "FINISH"]
     tool: Optional[Literal["policy_answer", "procurement_data_answer"]] = None
     input: Optional[str] = None
+    reasoning: Optional[str] = None
 
 
 class ConversationTurn(BaseModel):
