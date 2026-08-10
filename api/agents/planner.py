@@ -135,7 +135,8 @@ thresholds, sourcing rules, or compliance rules (e.g. contract vs. PO rules, spe
 Ariba/supplier-portal how-tos, sourcing events, supplier lifecycle, UNSPSC classification \
 concepts and hierarchy, contract compliance).
 - "procurement_data_answer": needs analysis over historical structured data (spend by \
-department/supplier, PO counts, invoice amounts, UNSPSC code lookups, payment/settlement timing).
+department/supplier, PO counts, invoice amounts, UNSPSC code lookups, payment/settlement timing, \
+or identifying which suppliers/vendors supply a given product, commodity, or category).
 
 IMPORTANT -- conversation history vs. evidence:
 Prior conversation turns below are provided ONLY to help you understand what the user is \
